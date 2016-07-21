@@ -1,0 +1,11 @@
+make a directory in this file that contains all the videos you want to compress.
+
+eg. make a directory called mandelbrot
+
+mkdir mandelbrot
+
+Then place some videos in it. Try this one,
+
+https://www.youtube.com/watch?v=PD2XgQOyCCk
+
+
