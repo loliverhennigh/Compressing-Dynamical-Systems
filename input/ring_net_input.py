@@ -82,15 +82,11 @@ def video_inputs(batch_size, seq_length):
   # get list of video file names
   video_filename = glb('../data/videos/'+FLAGS.video_dir+'/*') 
 
-  if FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4":
+  if FLAGS.model in ("fully_connected_84x84x4", "lstm_84x84x4"):
     shape = (84,84)
     num_frames = 4
     color = False
-  if FLAGS.model in ("fully_connected_84x84x12", "lstm_84x84x12", "lstm_large_84x84x12"):
-    shape = (84,84)
-    num_frames = 4 
-    color = True 
-  if FLAGS.model in ("lstm_84x84x3"):
+  if FLAGS.model in ("fully_connected_84x84x3", "lstm_84x84x3"):
     shape = (84, 84)
     num_frames = 1 
     color = True
@@ -131,7 +127,7 @@ def cannon_inputs(batch_size, seq_length):
   
   cannon_createTFRecords.generate_tfrecords(num_samples, seq_length)
  
-  tfrecord_filename = glb('../data/tfrecords_system/cannon/*num_samples_' + str(num_samples) + '_seq_length_' + str(seq_length) + '.tfrecords') 
+  tfrecord_filename = glb('../data/tfrecords/cannon/*num_samples_' + str(num_samples) + '_seq_length_' + str(seq_length) + '.tfrecords') 
   
   filename_queue = tf.train.string_input_producer(tfrecord_filename) 
 

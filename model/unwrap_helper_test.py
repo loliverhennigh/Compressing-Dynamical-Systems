@@ -13,6 +13,15 @@ def encoding(inputs, keep_prob):
   y_0 = ring_net.encoding(inputs[:, 0, :, :, :], keep_prob)  
   return y_0
 
+def fully_connected_step(y_0, keep_prob):
+  # calc x_0
+  x_0 = ring_net.decoding(y_0)
+ 
+  # calc next state
+  y_1 = ring_net.compression(y_0, keep_prob)
+
+  return x_0, y_1
+
 def lstm_step(y_0, hidden_state, keep_prob):
   # calc x_0
   x_0 = ring_net.decoding(y_0)

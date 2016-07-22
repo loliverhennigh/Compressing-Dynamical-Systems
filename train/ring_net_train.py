@@ -15,7 +15,8 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
                             """dir to store trained net""")
 
-CURRICULUM_STEPS = [200000, 150000, 200000, 400000]
+#CURRICULUM_STEPS = [200000, 150000, 200000, 400000]
+CURRICULUM_STEPS = [20, 150000, 200000, 400000]
 CURRICULUM_SEQ = [1, 4, 6, 12]
 CURRICULUM_BATCH_SIZE = [30, 25, 15, 10]
 CURRICULUM_LEARNING_RATE = [5e-5, 1e-5, 1e-5, 1e-5]
@@ -25,27 +26,32 @@ def train(iteration):
   with tf.Graph().as_default():
     # make inputs
     x = ring_net.inputs(CURRICULUM_BATCH_SIZE[iteration], CURRICULUM_SEQ[iteration]) 
+
     # possible input dropout 
     input_keep_prob = tf.placeholder("float")
     x_drop = tf.nn.dropout(x, input_keep_prob)
+
     # possible dropout inside
     keep_prob = tf.placeholder("float")
+
     # create and unrap network
     output_t, output_g, output_f = ring_net.unwrap(x_drop, keep_prob, CURRICULUM_SEQ[iteration]) 
+
     # calc error
     error = ring_net.loss(x, output_t, output_g, output_f)
     error = tf.div(error, CURRICULUM_SEQ[iteration])
+
     # train hopefuly 
     train_op = ring_net.train(error, CURRICULUM_LEARNING_RATE[iteration])
     
     # List of all Variables
     variables = tf.all_variables()
-
-    # Build a saver
-    saver = tf.train.Saver(tf.all_variables())   
     #for i, variable in enumerate(variables):
     #  print '----------------------------------------------'
     #  print variable.name[:variable.name.index(':')]
+
+    # Build a saver
+    saver = tf.train.Saver(tf.all_variables())   
 
     # Summary op
     summary_op = tf.merge_all_summaries()
@@ -94,12 +100,13 @@ def train(iteration):
     for step in xrange(CURRICULUM_STEPS[iteration]):
       t = time.time()
       _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:0.9, input_keep_prob:.8})
-      print(loss_value)
       elapsed = time.time() - t
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
       if step%100 == 0:
+        print("loss value at " + str(loss_value))
+        print("time per batch is " + str(elapsed))
         summary_str = sess.run(summary_op, feed_dict={keep_prob:0.9, input_keep_prob:.8})
         summary_writer.add_summary(summary_str, step) 
 
@@ -107,8 +114,6 @@ def train(iteration):
         checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model + FLAGS.system, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
         print("saved to " + FLAGS.train_dir + FLAGS.model + FLAGS.system)
-        print("loss value at " + str(loss_value))
-        print("time per batch is " + str(elapsed))
 
 def main(argv=None):  # pylint: disable=unused-argument
   if tf.gfile.Exists(FLAGS.train_dir + FLAGS.model + FLAGS.system):

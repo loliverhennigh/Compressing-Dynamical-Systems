@@ -28,7 +28,7 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num, color):
   cap = cv2.VideoCapture(video_file) 
 
   # calc number of frames in video
-  total_num_frames =float(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
+  total_num_frames = cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT)
   
   # create tf writer
   video_file_name = video_file.split('/')[-1]
@@ -52,13 +52,14 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num, color):
 
   # num frames
   ind = 0
+  converted_frames = 0
 
   # end of file
   end = False 
   
   print('now generating tfrecords for ' + video_file + ' and saving to ' + record_filename)
 
-  for _ in xrange(int((total_num_frames-100)/FLAGS.video_frames_per_train_frame)):
+  while (converted_frames < total_num_frames - FLAGS.video_frames_per_train_frame):
     # create frames
     if ind == 0:
       for s in xrange(seq_length):
@@ -66,24 +67,35 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num, color):
           for i in xrange(frame_num):
             if color:
               frames[:,:,i*3:(i+1)*3] = get_converted_frame(cap, shape, color)
+              converted_frames = converted_frames + FLAGS.video_frames_per_train_frame
             else:
               frames[:,:,i] = get_converted_frame(cap, shape, color)
+              converted_frames = converted_frames + FLAGS.video_frames_per_train_frame
+
           ind = ind + 1
         else:
           if color:
             frames[:,:,0:frame_num*3-3] = frames[:,:,3:frame_num*3]
             frames[:,:,(frame_num-1)*3:frame_num*3] = get_converted_frame(cap, shape, color)
+            converted_frames = converted_frames + FLAGS.video_frames_per_train_frame
+
           else:
             frames[:,:,0:frame_num-1] = frames[:,:,1:frame_num]
             frames[:,:,frame_num-1] = get_converted_frame(cap, shape, color)
+            converted_frames = converted_frames + FLAGS.video_frames_per_train_frame
+
         seq_frames[s, :, :, :] = frames[:,:,:]
     else:
       if color:
         frames[:,:,0:frame_num*3-3] = frames[:,:,3:frame_num*3]
         frames[:,:,(frame_num-1)*3:frame_num*3] = get_converted_frame(cap, shape, color)
+        converted_frames = converted_frames + FLAGS.video_frames_per_train_frame
+
       else:
         frames[:,:,0:frame_num-1] = frames[:,:,1:frame_num]
         frames[:,:,frame_num-1] = get_converted_frame(cap, shape, color)
+        converted_frames = converted_frames + FLAGS.video_frames_per_train_frame
+
       seq_frames[0:seq_length-1,:,:,:] = seq_frames[1:seq_length,:,:,:]
       seq_frames[seq_length-1, :, :, :] = frames[:,:,:]
 
@@ -110,7 +122,7 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num, color):
     # print status
     ind = ind + 1
     if ind%1000 == 0:
-      print('percent converted = ' + str(100.0 * float(ind) / float(total_num_frames/FLAGS.video_frames_per_train_frame)))
+      print('percent converted = ' + str(100.0 * float(converted_frames) / float(total_num_frames)))
 
   # When everything done, release the capture
   cap.release()

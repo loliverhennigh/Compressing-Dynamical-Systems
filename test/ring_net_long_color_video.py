@@ -25,9 +25,10 @@ tf.app.flags.DEFINE_string('video_name', 'color_video.mov',
 
 fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v') 
 video = cv2.VideoWriter()
+
 success = video.open(FLAGS.video_name, fourcc, 60, (84, 84), True)
 
-NUM_FRAMES = 5000
+NUM_FRAMES = 500
 
 def evaluate():
   """ Eval the system"""
@@ -37,10 +38,16 @@ def evaluate():
     # unwrap it
     keep_prob = tf.placeholder("float")
     y_0 = unwrap_helper_test.encoding(x, keep_prob)
-    x_1, y_1, hidden_state_1 = unwrap_helper_test.lstm_step(y_0, None,  keep_prob) 
+    if FLAGS.model in ("lstm_28x28x4", "lstm_84x84x4", "lstm_84x84x3"):
+      x_1, y_1, hidden_state_1 = unwrap_helper_test.lstm_step(y_0, None,  keep_prob)
+    elif FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "fully_connected_84x84x3"):
+      x_1, y_1 = unwrap_helper_test.fully_connected_step(y_0,  keep_prob)
     # set reuse to true 
     tf.get_variable_scope().reuse_variables()
-    x_2, y_2, hidden_state_2 = unwrap_helper_test.lstm_step(y_1, hidden_state_1,  keep_prob) 
+    if FLAGS.model in ("lstm_28x28x4", "lstm_84x84x4", "lstm_84x84x3"):
+      x_2, y_2, hidden_state_1 = unwrap_helper_test.lstm_step(y_1, hidden_state_1,  keep_prob)
+    elif FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "fully_connected_84x84x3"):
+      x_2, y_2 = unwrap_helper_test.fully_connected_step(y_1,  keep_prob)
 
     # restore network
     variables_to_restore = tf.all_variables()
@@ -58,7 +65,10 @@ def evaluate():
     tf.train.start_queue_runners(sess=sess)
 
     # eval ounce
-    generated_x_1, generated_y_1, generated_hidden_state_1 = sess.run([x_1, y_1, hidden_state_1],feed_dict={keep_prob:1.0})
+    if FLAGS.model in ("lstm_28x28x4", "lstm_84x84x4", "lstm_84x84x3"):
+      generated_x_1, generated_y_1, generated_hidden_state_1 = sess.run([x_1, y_1, hidden_state_1],feed_dict={keep_prob:1.0})
+    elif FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "fully_connected_84x84x3"):
+      generated_x_1, generated_y_1 = sess.run([x_1, y_1],feed_dict={keep_prob:1.0})
     new_im = np.uint8(np.abs(generated_x_1/np.amax(generated_x_1[0, :, :, :]) * 255))
     video.write(new_im[0,:,:,:])
  
@@ -66,7 +76,10 @@ def evaluate():
     for step in xrange(NUM_FRAMES-1):
       # continue to calc frames
       print(step)
-      generated_x_1, generated_y_1, generated_hidden_state_1 = sess.run([x_2, y_2, hidden_state_2],feed_dict={keep_prob:1.0, y_1:generated_y_1, hidden_state_1:generated_hidden_state_1})
+      if FLAGS.model in ("lstm_28x28x4", "lstm_84x84x4", "lstm_84x84x3"):
+        generated_x_1, generated_y_1, generated_hidden_state_1 = sess.run([x_2, y_2, hidden_state_2],feed_dict={keep_prob:1.0, y_1:generated_y_1, hidden_state_1:generated_hidden_state_1})
+      elif FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "fully_connected_84x84x3"):
+        generated_x_1, generated_y_1 = sess.run([x_2, y_2],feed_dict={keep_prob:1.0, y_1:generated_y_1})
       new_im = np.uint8(np.abs(generated_x_1/np.amax(generated_x_1[0, :, :, :]) * 255))
       video.write(new_im[0,:,:,:])
     print('saved to ' + FLAGS.video_name)

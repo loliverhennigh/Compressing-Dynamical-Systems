@@ -56,8 +56,7 @@ def _variable_with_weight_decay(name, shape, stddev, wd):
   """
   var = _variable_on_cpu(name, shape,
                          tf.truncated_normal_initializer(stddev=stddev))
-  #if wd:
-  if False:
+  if wd:
     weight_decay = tf.mul(tf.nn.l2_loss(var), wd, name='weight_loss')
     weight_decay.set_shape([])
     tf.add_to_collection('losses', weight_decay)
@@ -109,20 +108,6 @@ def _fc_layer(inputs, hiddens, idx, flat = False, linear = False):
     ip = tf.add(tf.matmul(inputs_processed,weights),biases)
     return tf.maximum(FLAGS.alpha*ip,ip,name=str(idx)+'_fc')
 
-def sharpen(inputs):
-  batch_size = inputs.get_shape().as_list()[0]
-  max_value = tf.reduce_max(inputs, reduction_indices=[1])
-  inv_max_value = tf.div(1.0, max_value)
-  inv_max_value = tf.expand_dims(inv_max_value, 1)
-  inputs = tf.mul(inv_max_value, inputs)
-  inputs = tf.pow(inputs, 10.0)
-  return inputs
-
-def one_hot(inputs):
-  index_max = tf.argmax(inputs, 1)
-  input_shape = inputs.get_shape().as_list()[1]
-  return tf.one_hot(index_max, input_shape, 1.0, 0.0)
-
 def encoding_28x28x4(inputs, keep_prob):
   """Builds encoding part of ring net.
   Args:
@@ -153,7 +138,7 @@ def encoding_28x28x4(inputs, keep_prob):
   return y_1 
 
 def encoding_84x84x4(inputs, keep_prob):
-  """Builds encoding part of ring net. (similar to DQN)
+  """Builds encoding part of ring net. 
   Args:
     inputs: input to encoder
     keep_prob: dropout layer
@@ -168,11 +153,15 @@ def encoding_84x84x4(inputs, keep_prob):
   # conv2
   conv2 = _conv_layer(conv1, 4, 2, 64, 2)
   # conv3
-  conv3 = _conv_layer(conv2, 3, 1, 64, 3)
+  conv3 = _conv_layer(conv2, 3, 1, 128, 3)
   # conv4
-  conv4 = _conv_layer(conv3, 2, 2, 64, 4)
+  conv4 = _conv_layer(conv3, 1, 1, 64, 4)
+  # conv5
+  conv5 = _conv_layer(conv4, 3, 1, 128, 5)
+  # conv6
+  conv6 = _conv_layer(conv5, 1, 1, 64, 6)
   # fc5 
-  fc5 = _fc_layer(conv4, 512, 5, True, False)
+  fc5 = _fc_layer(conv4, 1024, 7, True, False)
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
@@ -181,40 +170,8 @@ def encoding_84x84x4(inputs, keep_prob):
 
   return y_1 
 
-def encoding_84x84x12(inputs, keep_prob):
-  """Builds encoding part of ring net. (similar to DQN)
-  Args:
-    inputs: input to encoder
-    keep_prob: dropout layer
-  """
-   #--------- Making the net -----------
-  # x_1 -> y_1 -> y_2 -> x_2
-  # this peice x_1 -> y_1
-  x_1_image = inputs 
- 
-  # conv1
-  conv1 = _conv_layer(x_1_image, 8, 3, 32, 1)
-  # conv2
-  conv2 = _conv_layer(conv1, 4, 2, 64, 2)
-  # conv3
-  conv3 = _conv_layer(conv2, 3, 1, 128, 3)
-  # conv4
-  conv4 = _conv_layer(conv3, 1, 1, 64, 4)
-  # conv5
-  conv5 = _conv_layer(conv4, 3, 1, 128, 5)
-  # conv6
-  conv6 = _conv_layer(conv5, 1, 1, 64, 6)
-  # fc5 
-  fc7 = _fc_layer(conv6, 1024, 7, True, False)
-  # dropout maybe
-  # y_1 
-  y_1 = tf.nn.dropout(fc7, keep_prob)
-  _activation_summary(y_1)
-
-  return y_1 
-
 def encoding_84x84x3(inputs, keep_prob):
-  """Builds encoding part of ring net. (similar to DQN)
+  """Builds encoding part of ring net.
   Args:
     inputs: input to encoder
     keep_prob: dropout layer
@@ -238,39 +195,6 @@ def encoding_84x84x3(inputs, keep_prob):
   conv6 = _conv_layer(conv5, 1, 1, 64, 6)
   # fc5 
   fc7 = _fc_layer(conv6, 1024, 7, True, False)
-  # dropout maybe
-  # y_1 
-  y_1 = tf.nn.dropout(fc7, keep_prob)
-  _activation_summary(y_1)
-
-  return y_1 
-
-
-def encoding_large_84x84x12(inputs, keep_prob):
-  """Builds encoding part of ring net. (similar to DQN)
-  Args:
-    inputs: input to encoder
-    keep_prob: dropout layer
-  """
-  #--------- Making the net -----------
-  # x_1 -> y_1 -> y_2 -> x_2
-  # this peice x_1 -> y_1
-  x_1_image = inputs 
- 
-  # conv1
-  conv1 = _conv_layer(x_1_image, 8, 3, 64, 1)
-  # conv2
-  conv2 = _conv_layer(conv1, 4, 2, 128, 2)
-  # conv3
-  conv3 = _conv_layer(conv2, 3, 1, 256, 3)
-  # conv4
-  conv4 = _conv_layer(conv3, 1, 1, 128, 4)
-  # conv5
-  conv5 = _conv_layer(conv4, 3, 1, 256, 5)
-  # conv6
-  conv6 = _conv_layer(conv5, 1, 1, 128, 6)
-  # fc5 
-  fc7 = _fc_layer(conv6, 2048, 7, True, False)
   # dropout maybe
   # y_1 
   y_1 = tf.nn.dropout(fc7, keep_prob)
@@ -317,11 +241,35 @@ def compression_84x84x4(inputs, keep_prob):
   # fc12
   fc12 = _fc_layer(fc11, 512, 12, False, False)
   # fc13
-  fc12 = _fc_layer(fc11, 512, 13, False, False)
+  fc13 = _fc_layer(fc12, 1024, 13, False, False)
   # dropout maybe
-  fc12_dropout = tf.nn.dropout(fc12, keep_prob)
+  fc13_dropout = tf.nn.dropout(fc13, keep_prob)
   # y_2 
-  y_2 = _fc_layer(fc12_dropout, 256, 14, False, False)
+  y_2 = _fc_layer(fc13_dropout, 512, 14, False, False)
+
+  return y_2 
+
+def compression_84x84x3(inputs, keep_prob):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  y_1 = inputs 
+ 
+  # (start indexing at 10) -- I will change this in a bit
+  # fc11
+  fc11 = _fc_layer(y_1, 1024, 11, False, False)
+  # fc12
+  fc12 = _fc_layer(fc11, 1024, 12, False, False)
+  # fc13
+  fc13 = _fc_layer(fc12, 2048, 13, False, False)
+  # dropout maybe
+  fc13_dropout = tf.nn.dropout(fc13, keep_prob)
+  # y_2 
+  y_2 = _fc_layer(fc13_dropout, 1024, 14, False, False)
 
   return y_2 
 
@@ -375,31 +323,6 @@ def lstm_compression_84x84x4(inputs, hidden_state, keep_prob):
   
   return y2, new_state
 
-def lstm_compression_84x84x12(inputs, hidden_state, keep_prob):
-  """Builds compressed dynamical system part of the net.
-  Args:
-    inputs: input to system
-  """
-  #--------- Making the net -----------
-  # x_1 -> y_1 -> y_2 -> x_2
-  # this peice y_1 -> y_2
-  num_layers = 2 
-
-  y_1 = inputs
-
-  with tf.variable_scope("LSTM", initializer = tf.random_uniform_initializer(-0.01, 0.01)):
-    with tf.device('/cpu:0'):
-      lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(1024, forget_bias=1.0)
-      lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, output_keep_prob=keep_prob)
-      cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * num_layers)
-      if hidden_state == None:
-        batch_size = inputs.get_shape()[0]
-        hidden_state = cell.zero_state(batch_size, tf.float32)
-
-  y2, new_state = cell(y_1, hidden_state)
-  
-  return y2, new_state
-
 def lstm_compression_84x84x3(inputs, hidden_state, keep_prob):
   """Builds compressed dynamical system part of the net.
   Args:
@@ -408,39 +331,13 @@ def lstm_compression_84x84x3(inputs, hidden_state, keep_prob):
   #--------- Making the net -----------
   # x_1 -> y_1 -> y_2 -> x_2
   # this peice y_1 -> y_2
-  num_layers = 2 
+  num_layers = 3
 
   y_1 = inputs
 
   with tf.variable_scope("LSTM", initializer = tf.random_uniform_initializer(-0.01, 0.01)):
     with tf.device('/cpu:0'):
       lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(1024, forget_bias=1.0)
-      lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, output_keep_prob=keep_prob)
-      cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * num_layers)
-      if hidden_state == None:
-        batch_size = inputs.get_shape()[0]
-        hidden_state = cell.zero_state(batch_size, tf.float32)
-
-  y2, new_state = cell(y_1, hidden_state)
-  
-  return y2, new_state
-
-
-def lstm_compression_large_84x84x12(inputs, hidden_state, keep_prob):
-  """Builds compressed dynamical system part of the net.
-  Args:
-    inputs: input to system
-  """
-  #--------- Making the net -----------
-  # x_1 -> y_1 -> y_2 -> x_2
-  # this peice y_1 -> y_2
-  num_layers = 2 
-
-  y_1 = inputs
-
-  with tf.variable_scope("LSTM", initializer = tf.random_uniform_initializer(-0.01, 0.01)):
-    with tf.device('/cpu:0'):
-      lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(2048, forget_bias=1.0)
       lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, output_keep_prob=keep_prob)
       cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * num_layers)
       if hidden_state == None:
@@ -489,36 +386,6 @@ def decoding_84x84x4(inputs):
   y_2 = inputs 
  
   # fc21
-  fc21 = _fc_layer(y_2, 512, 21, False, False)
-  # fc23
-  fc22 = _fc_layer(fc21, 64*7*7, 22, False, False)
-  conv22 = tf.reshape(fc22, [-1, 7, 7, 64])
-  # conv23
-  conv23 = _transpose_conv_layer(conv22, 2, 2, 64, 23)
-  # conv24
-  conv24 = _transpose_conv_layer(conv23, 3, 1, 64, 24)
-  # conv25
-  conv25 = _transpose_conv_layer(conv24, 4, 2, 32, 25)
-  # conv26
-  conv26 = _transpose_conv_layer(conv25, 8, 3, 4, 26)
-  # x_2 
-  #x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
-  x_2 = tf.reshape(conv26, [-1, 84, 84, 4])
-  _activation_summary(x_2)
-
-  return x_2 
-
-def decoding_84x84x12(inputs):
-  """Builds decoding part of ring net.
-  Args:
-    inputs: input to decoder
-  """
-  #--------- Making the net -----------
-  # x_1 -> y_1 -> y_2 -> x_2
-  # this peice y_2 -> x_2
-  y_2 = inputs 
- 
-  # fc21
   fc21 = _fc_layer(y_2, 64*14*14, 21, False, False)
   conv22 = tf.reshape(fc21, [-1, 14, 14, 64])
   # conv23
@@ -532,7 +399,7 @@ def decoding_84x84x12(inputs):
   # conv25
   conv27 = _transpose_conv_layer(conv26, 4, 2, 256, 27)
   # conv26
-  x_2 = _transpose_conv_layer(conv27, 8, 3, 12, 28)
+  x_2 = _transpose_conv_layer(conv27, 8, 3, 4, 28)
   # x_2 
   _activation_summary(x_2)
 
@@ -563,38 +430,6 @@ def decoding_84x84x3(inputs):
   conv27 = _transpose_conv_layer(conv26, 4, 2, 256, 27)
   # conv26
   x_2 = _transpose_conv_layer(conv27, 8, 3, 3, 28)
-  # x_2 
-  _activation_summary(x_2)
-
-  return x_2 
-
-
-def decoding_large_84x84x12(inputs):
-  """Builds decoding part of ring net.
-  Args:
-    inputs: input to decoder
-  """
-  #--------- Making the net -----------
-  # x_1 -> y_1 -> y_2 -> x_2
-  # this peice y_2 -> x_2
-  y_2 = inputs 
- 
-  # fc21
-  fc21 = _fc_layer(y_2, 128*14*14, 21, False, False)
-  conv22 = tf.reshape(fc21, [-1, 14, 14, 128])
-  # conv23
-  conv23 = _transpose_conv_layer(conv22, 1, 1, 256, 23)
-  # conv24
-  conv24 = _transpose_conv_layer(conv23, 3, 1, 128, 24)
-  # conv25
-  conv25 = _transpose_conv_layer(conv24, 1, 1, 256, 25)
-  # conv26
-  conv26 = _transpose_conv_layer(conv25, 3, 1, 128, 26)
-  # conv25
-  conv27 = _transpose_conv_layer(conv26, 4, 2, 64, 27)
-  # conv26
-  x_2 = _transpose_conv_layer(conv27, 8, 3, 12, 28)
-  x_2 = tf.nn.sigmoid(x_2)
   # x_2 
   _activation_summary(x_2)
 

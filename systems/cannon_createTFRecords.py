@@ -33,9 +33,9 @@ def generate_tfrecords(num_samples, seq_length):
   shape = (28,28)
   frame_num = 4
 
-  filename = '../data/tfrecords_system/cannon/cannon_num_samples_' + str(num_samples) + '_seq_length_' + str(seq_length) + '.tfrecords'
+  filename = '../data/tfrecords/cannon/cannon_num_samples_' + str(num_samples) + '_seq_length_' + str(seq_length) + '.tfrecords'
 
-  tfrecord_filename = glb('../data/tfrecords_system/cannon/*')  
+  tfrecord_filename = glb('../data/tfrecords/cannon/*')  
   if filename in tfrecord_filename:
     print('already a tfrecord there! I will skip this one')
     return

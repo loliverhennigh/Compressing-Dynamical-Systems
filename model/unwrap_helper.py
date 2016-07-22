@@ -11,8 +11,11 @@ FLAGS = tf.app.flags.FLAGS
 def fully_connected_unwrap(inputs, keep_prob, seq_length):
   # make a list for the outputs
   output_t = []
-  output_g = [] 
-  output_f = []
+  output_g = []
+  if seq_length > 1:
+    output_f = []
+  else:
+    output_f = None
 
   # first I will run once to create the graph and then set reuse to true so there is weight sharing when I roll out t
   # do f
@@ -44,8 +47,9 @@ def fully_connected_unwrap(inputs, keep_prob, seq_length):
       output_t.append(y_1)
     
   # compact output_f and output_t 
-  output_f = tf.pack(output_f)
-  output_t = tf.pack(output_t)
+  if seq_length > 1:
+    output_f = tf.pack(output_f)
+    output_t = tf.pack(output_t)
 
   # compact output g
   output_g = tf.pack(output_g)
@@ -56,7 +60,10 @@ def lstm_unwrap(inputs, keep_prob, seq_length):
   # make a list for the outputs
   output_t = []
   output_g = [] 
-  output_f = []
+  if seq_length > 1:
+    output_f = []
+  else:
+    output_f = None
 
   # first I will run once to create the graph and then set reuse to true so there is weight sharing when I roll out t
   # do f
