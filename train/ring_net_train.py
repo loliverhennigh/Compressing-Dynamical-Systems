@@ -46,9 +46,9 @@ def train(iteration):
     
     # List of all Variables
     variables = tf.all_variables()
-    for i, variable in enumerate(variables):
-      print '----------------------------------------------'
-      print variable.name[:variable.name.index(':')]
+    #for i, variable in enumerate(variables):
+    #  print '----------------------------------------------'
+    #  print variable.name[:variable.name.index(':')]
 
     # Build a saver
     saver = tf.train.Saver(tf.all_variables())   
@@ -71,8 +71,8 @@ def train(iteration):
     # restore if iteration is not 0
     if iteration != 0:
       variables_to_restore = tf.all_variables()
-      autoencoder_variables = [variable for i, variable in enumerate(variables_to_restore) if "compress" not in variable.name[:variable.name.index(':')]]
-      rnn_variables = [variable for i, variable in enumerate(variables_to_restore) if "compress" in variable.name[:variable.name.index(':')]]
+      autoencoder_variables = [variable for i, variable in enumerate(variables_to_restore) if ("compress" not in variable.name[:variable.name.index(':')]) and ("RNN" not in variable.name[:variable.name.index(':')])]
+      rnn_variables = [variable for i, variable in enumerate(variables_to_restore) if ("compress" in variable.name[:variable.name.index(':')]) or ("RNN" in variable.name[:variable.name.index(':')])]
      
       ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir + FLAGS.model + FLAGS.system)
       autoencoder_saver = tf.train.Saver(autoencoder_variables)
