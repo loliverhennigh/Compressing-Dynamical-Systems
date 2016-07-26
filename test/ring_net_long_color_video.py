@@ -81,10 +81,9 @@ def evaluate():
       elif FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "fully_connected_84x84x3"):
         generated_x_1, generated_y_1 = sess.run([x_2, y_2],feed_dict={keep_prob:1.0, y_1:generated_y_1})
       new_im = np.uint8(np.abs(generated_x_1/np.amax(generated_x_1[0, :, :, :]) * 255))
-      video.write(new_im[0,:,:,:])
+      video.write(new_im[0,:,:,0:3])
     print('saved to ' + FLAGS.video_name)
     video.release()
-    #video2.release()
     cv2.destroyAllWindows()
        
 def main(argv=None):  # pylint: disable=unused-argument
