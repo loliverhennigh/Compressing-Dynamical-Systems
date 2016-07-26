@@ -45,7 +45,7 @@ def evaluate():
     # set reuse to true 
     tf.get_variable_scope().reuse_variables()
     if FLAGS.model in ("lstm_28x28x4", "lstm_84x84x4", "lstm_84x84x3"):
-      x_2, y_2, hidden_state_1 = unwrap_helper_test.lstm_step(y_1, hidden_state_1,  keep_prob)
+      x_2, y_2, hidden_state_2 = unwrap_helper_test.lstm_step(y_1, hidden_state_1,  keep_prob)
     elif FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "fully_connected_84x84x3"):
       x_2, y_2 = unwrap_helper_test.fully_connected_step(y_1,  keep_prob)
 
