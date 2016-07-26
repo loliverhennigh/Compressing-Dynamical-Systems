@@ -123,7 +123,7 @@ def cannon_inputs(batch_size, seq_length):
   Returns:
     images: Images. 4D tensor. Possible of size [batch_size, 28x28x4].
   """
-  num_samples = 1000000
+  num_samples = 100000
   
   cannon_createTFRecords.generate_tfrecords(num_samples, seq_length)
  
