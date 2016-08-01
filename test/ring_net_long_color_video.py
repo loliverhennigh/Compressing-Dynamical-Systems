@@ -26,7 +26,7 @@ tf.app.flags.DEFINE_string('video_name', 'color_video.mov',
 fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v') 
 video = cv2.VideoWriter()
 
-success = video.open(FLAGS.video_name, fourcc, 60, (84, 84), True)
+success = video.open(FLAGS.video_name, fourcc, 4, (84, 84), True)
 
 NUM_FRAMES = 500
 
