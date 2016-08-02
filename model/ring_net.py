@@ -51,6 +51,8 @@ def inputs(batch_size, seq_length):
   """
   if FLAGS.system == "cannon":
     x = ring_net_input.cannon_inputs(batch_size, seq_length)
+  elif FLAGS.system == "balls":
+    x = ring_net_input.balls_inputs(batch_size, seq_length)
   elif FLAGS.system == "video":
     x = ring_net_input.video_inputs(batch_size, seq_length)
   return x

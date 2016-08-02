@@ -5,6 +5,7 @@ import tensorflow as tf
 import utils.createTFRecords as createTFRecords
 import systems.cannon as cannon 
 import systems.cannon_createTFRecords as cannon_createTFRecords
+import systems.balls_createTFRecords as balls_createTFRecords
 from glob import glob as glb
 
 
@@ -132,6 +133,29 @@ def cannon_inputs(batch_size, seq_length):
   filename_queue = tf.train.string_input_producer(tfrecord_filename) 
 
   image = read_data(filename_queue, seq_length, (28, 28), 4, False)
+  tf.image_summary('images', image)
+  
+  frames = _generate_image_label_batch(image, batch_size)
+
+  return frames
+
+def balls_inputs(batch_size, seq_length):
+  """Construct cannon input for ring net. just a 28x28 frame video of a bouncing ball 
+  Args:
+    batch_size: Number of images per batch.
+    seq_length: seq of inputs.
+  Returns:
+    images: Images. 4D tensor. Possible of size [batch_size, 28x28x4].
+  """
+  num_samples = 1000
+  
+  balls_createTFRecords.generate_tfrecords(num_samples, seq_length)
+ 
+  tfrecord_filename = glb('../data/tfrecords/balls/*num_samples_' + str(num_samples) + '_seq_length_' + str(seq_length) + '.tfrecords') 
+ 
+  filename_queue = tf.train.string_input_producer(tfrecord_filename) 
+
+  image = read_data(filename_queue, seq_length, (84, 84), 4, False)
   tf.image_summary('images', image)
   
   frames = _generate_image_label_batch(image, batch_size)

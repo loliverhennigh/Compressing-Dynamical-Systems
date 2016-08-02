@@ -53,6 +53,7 @@ def evaluate():
     tf.train.start_queue_runners(sess=sess)
 
     # eval ounce
+    print("generated_seq")
     generated_seq, hidden_states, inputs = sess.run([output_g, output_f, x],feed_dict={keep_prob:1.0})
     generated_seq = generated_seq[0]
     inputs = inputs[0]
@@ -60,6 +61,7 @@ def evaluate():
     # make video
     hidden_im = np.zeros((100,100,3))
     for step in xrange(NUM_FRAMES-1):
+      print("making frames")
       # calc image from y_2
       new_im = np.concatenate((generated_seq[step, :, :, 0:3].squeeze()/np.amax(generated_seq[step, :, :, 0:3]), inputs[step,:,:,0:3].squeeze()/np.amax(inputs[step,:,:,0:3]), generated_seq[step, :, :, 0:3].squeeze() - inputs[step, :, :, 0:3].squeeze()), axis=0)
       new_im = np.uint8(np.abs(new_im * 255))

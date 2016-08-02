@@ -25,7 +25,7 @@ tf.app.flags.DEFINE_string('video_name', 'color_video.mov',
                            """name of the video you are saving""")
 tf.app.flags.DEFINE_integer('run_length', 100,
                            """number of frames to run out""")
-tf.app.flags.DEFINE_integer('start_frame', 9000,
+tf.app.flags.DEFINE_integer('start_frame', 0,
                            """number of frames to run out""")
 
 fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v') 
@@ -91,6 +91,7 @@ def get_seq_frame_test(cap, seq_length, frame_num, shape, color):
 def get_converted_frame(cap, shape, color):
   for i in xrange(FLAGS.video_frames_per_train_frame):
     ret, frame = cap.read()
+  print(frame.shape)
   frame = cv2.resize(frame, shape, interpolation = cv2.INTER_CUBIC)
   if color:
     return frame
